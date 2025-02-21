@@ -1,13 +1,13 @@
-import Koa from 'koa';
+import cors from '@koa/cors';
 import Router from '@koa/router';
-import bodyParser from 'koa-bodyparser';
-import cors from 'koa-cors';
 import dotenv from 'dotenv';
-import userRoutes from './routes/user';
+import Koa from 'koa';
+import bodyParser from 'koa-bodyparser';
 import { errorHandler, requestLogger } from './middleware/error';
-import { createRateLimiter } from './middleware/ratelimit';
 import { performanceMonitor } from './middleware/monitor';
+import { createRateLimiter } from './middleware/ratelimit';
 import { tracing } from './middleware/tracing';
+import userRoutes from './routes/user';
 
 // 加载环境变量
 dotenv.config();
@@ -31,6 +31,18 @@ app.use(createRateLimiter());
 
 // 添加性能监控中间件
 app.use(performanceMonitor);
+
+// 404 Not Found middleware
+app.use(async (ctx, next) => {
+  await next();
+  if (ctx.status === 404) {
+    ctx.body = {
+      success: false,
+      message: 'Not Found',
+      data: null
+    };
+  }
+});
 
 // 响应格式化中间件
 app.use(async (ctx, next) => {

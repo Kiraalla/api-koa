@@ -1,21 +1,32 @@
-import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
 import '@jest/globals';
+import dotenv from 'dotenv';
+import { Sequelize } from 'sequelize';
 
 // 加载测试环境变量
 dotenv.config({ path: '.env.test' });
 
 // 配置测试数据库连接
 export const testDb = new Sequelize({
-  dialect: 'sqlite',
-  storage: ':memory:',
+  dialect: 'mysql',
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  database: process.env.DB_NAME,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
   logging: false
 });
 
 // 在所有测试开始前执行
 beforeAll(async () => {
-  // 同步数据库结构
-  await testDb.sync({ force: true });
+  try {
+    // 测试数据库连接
+    await testDb.authenticate();
+    console.log('Connection has been established successfully.');
+    // 同步数据库结构
+    await testDb.sync({ force: true });
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
 });
 
 // 在每个测试用例后执行

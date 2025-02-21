@@ -116,7 +116,7 @@ export interface RegisterRequest {
 
 // 用户登录请求体
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 

@@ -1,9 +1,9 @@
 import Router from '@koa/router';
 import bcrypt from 'bcryptjs';
+import { userSchemas, validate } from '../middleware/validator';
 import User from '../models/user';
+import { CustomContext, LoginRequest, RegisterRequest } from '../types';
 import { generateToken } from '../utils/auth';
-import { validate, userSchemas } from '../middleware/validator';
-import { CustomContext, RegisterRequest, LoginRequest, BaseResponse, LoginResponse } from '../types';
 
 const router = new Router({ prefix: '/api/users' });
 
@@ -46,10 +46,10 @@ router.post('/register', validate(userSchemas.register), async (ctx: CustomConte
 
 // 用户登录
 router.post('/login', validate(userSchemas.login), async (ctx: CustomContext) => {
-  const { username, password } = ctx.request.body as LoginRequest;
+  const { email, password } = ctx.request.body as LoginRequest;
 
   try {
-    const user = await User.findOne({ where: { username } });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       ctx.status = 401;
       ctx.body = {

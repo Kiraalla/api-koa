@@ -1,5 +1,5 @@
-import { IAdapter, ClientType } from '../types/adapter';
-import { RequestParams, ApiResponse } from '../types/common';
+import { ClientType, IAdapter } from '../types/adapter';
+import { ApiResponse, RequestParams } from '../types/common';
 
 /**
  * 小程序端适配器实现
@@ -26,6 +26,7 @@ export class MiniprogramAdapter implements IAdapter {
     // 小程序端的响应数据处理逻辑
     // 可能需要调整数据结构以适应小程序的需求
     return {
+      code: response.code, // 从 HTTP 状态码中获取
       success: response.success,
       message: response.message,
       data: response.data,

@@ -1,6 +1,6 @@
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Context } from 'koa';
-import bcrypt from 'bcrypt';
 
 interface TokenPayload {
   id: number;

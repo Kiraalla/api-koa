@@ -43,8 +43,8 @@ export const userSchemas: Record<string, Joi.ObjectSchema<any>> = {
     password: Joi.string().required().min(6).max(30),
     phone: Joi.string().pattern(/^[0-9]{11}$/).optional()
   }),
-  login: Joi.object({
-    username: Joi.string().required(),
+login: Joi.object({
+    email: Joi.string().required().email(),
     password: Joi.string().required()
   })
 };
