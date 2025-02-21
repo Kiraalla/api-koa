@@ -1,4 +1,5 @@
-import { IAdapter, ClientType } from './types';
+import { IAdapter, ClientType } from '../types/adapter';
+import { RequestParams, ApiResponse } from '../types/common';
 
 /**
  * H5端适配器实现
@@ -8,7 +9,7 @@ export class H5Adapter implements IAdapter {
    * 转换请求参数
    * @param params 原始请求参数
    */
-  transformRequest(params: any): any {
+  transformRequest(params: RequestParams): RequestParams {
     // H5端请求参数处理逻辑
     return params;
   }
@@ -17,7 +18,7 @@ export class H5Adapter implements IAdapter {
    * 转换响应数据
    * @param response 原始响应数据
    */
-  transformResponse(response: any): any {
+  transformResponse<T>(response: ApiResponse<T>): ApiResponse<T> {
     // H5端响应数据处理逻辑
     return {
       success: response.success,

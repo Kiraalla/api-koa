@@ -19,53 +19,47 @@ class User extends Model {
   }
 }
 
-User.init(
-  {
-    id: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      autoIncrement: true,
-      primaryKey: true
-    },
-    username: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
-      unique: true
-    },
-    email: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true
-      }
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      set(value: string) {
-        const salt = bcrypt.genSaltSync(10);
-        const hash = bcrypt.hashSync(value, salt);
-        this.setDataValue('password', hash);
-      }
-    },
-    phone: {
-      type: DataTypes.STRING(20),
-      allowNull: true
-    },
-    avatar: {
-      type: DataTypes.STRING(255),
-      allowNull: true
-    },
-    role: {
-      type: DataTypes.ENUM('user', 'admin'),
-      defaultValue: 'user',
-      allowNull: false
+User.init({
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true
     }
   },
-  {
-    sequelize,
-    tableName: 'users'
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  avatar: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  role: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'user'
   }
-);
+}, {
+  sequelize,
+  modelName: 'User',
+  tableName: 'users',
+  paranoid: true
+});
 
 export default User;

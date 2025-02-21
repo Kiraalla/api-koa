@@ -1,13 +1,14 @@
-import { IAdapter, ClientType } from './types';
+import { IAdapter, ClientType } from '../types/adapter';
+import { IAdapterFactory } from '../types/adapter';
 import { H5Adapter } from './h5.adapter';
 import { MiniprogramAdapter } from './miniprogram.adapter';
 
 /**
  * 适配器工厂类
  */
-export class AdapterFactory {
+export class AdapterFactory implements IAdapterFactory {
   private static instance: AdapterFactory;
-  private adapters: Map<ClientType, IAdapter>;
+  private readonly adapters: Map<ClientType, IAdapter>;
 
   private constructor() {
     this.adapters = new Map();

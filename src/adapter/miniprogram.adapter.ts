@@ -1,4 +1,5 @@
-import { IAdapter, ClientType } from './types';
+import { IAdapter, ClientType } from '../types/adapter';
+import { RequestParams, ApiResponse } from '../types/common';
 
 /**
  * 小程序端适配器实现
@@ -8,7 +9,7 @@ export class MiniprogramAdapter implements IAdapter {
    * 转换请求参数
    * @param params 原始请求参数
    */
-  transformRequest(params: any): any {
+  transformRequest(params: RequestParams): RequestParams {
     // 小程序端可能需要添加特定的参数
     return {
       ...params,
@@ -21,13 +22,14 @@ export class MiniprogramAdapter implements IAdapter {
    * 转换响应数据
    * @param response 原始响应数据
    */
-  transformResponse(response: any): any {
+  transformResponse<T>(response: ApiResponse<T>): ApiResponse<T> {
     // 小程序端的响应数据处理逻辑
     // 可能需要调整数据结构以适应小程序的需求
     return {
-      code: response.success ? 0 : 1,
-      msg: response.message,
-      result: response.data
+      success: response.success,
+      message: response.message,
+      data: response.data,
+      timestamp: Date.now()
     };
   }
 

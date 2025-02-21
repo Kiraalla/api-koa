@@ -1,11 +1,23 @@
 import jwt from 'jsonwebtoken';
 import { Context } from 'koa';
+import bcrypt from 'bcrypt';
 
 interface TokenPayload {
   id: number;
   username: string;
   role: string;
 }
+
+// 密码加密函数
+export const hashPassword = async (password: string): Promise<string> => {
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
+};
+
+// 密码比较函数
+export const comparePassword = async (candidatePassword: string, hashedPassword: string): Promise<boolean> => {
+  return bcrypt.compare(candidatePassword, hashedPassword);
+};
 
 export const generateToken = (payload: TokenPayload): string => {
   const secret = process.env.JWT_SECRET as string;
@@ -48,7 +60,7 @@ export const authMiddleware = async (ctx: Context, next: () => Promise<any>) => 
 
 export const adminAuthMiddleware = async (ctx: Context, next: () => Promise<any>) => {
   await authMiddleware(ctx, async () => {
-    if (!ctx.state.user || ctx.state.user.role !== 'admin') {
+    if (ctx.state.user.role !== 'admin') {
       ctx.status = 403;
       ctx.body = {
         success: false,

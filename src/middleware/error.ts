@@ -1,25 +1,5 @@
 import { Context } from 'koa';
-import winston from 'winston';
-
-// 配置日志记录器
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
-  ]
-});
-
-// 开发环境下同时输出到控制台
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple()
-  }));
-}
+import { logger } from '../utils/logger';
 
 // 错误处理中间件
 export const errorHandler = async (ctx: Context, next: () => Promise<any>) => {

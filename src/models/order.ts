@@ -73,7 +73,21 @@ Order.init(
   },
   {
     sequelize,
-    tableName: 'orders'
+    tableName: 'orders',
+    indexes: [
+      {
+        name: 'idx_order_status',
+        fields: ['status'], // 订单状态索引，优化订单状态查询
+      },
+      {
+        name: 'idx_order_created_at',
+        fields: ['created_at'], // 创建时间索引，优化时间范围查询
+      },
+      {
+        name: 'idx_order_payment_shipping',
+        fields: ['payment_status', 'shipping_status'], // 组合索引，优化支付和配送状态查询
+      }
+    ]
   }
 );
 

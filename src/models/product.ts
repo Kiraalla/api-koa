@@ -55,7 +55,25 @@ Product.init(
   },
   {
     sequelize,
-    tableName: 'products'
+    tableName: 'products',
+    indexes: [
+      {
+        name: 'idx_product_category',
+        fields: ['category'], // 商品分类索引，优化分类查询
+      },
+      {
+        name: 'idx_product_status',
+        fields: ['status'], // 商品状态索引，优化状态筛选
+      },
+      {
+        name: 'idx_product_price',
+        fields: ['price'], // 价格索引，优化价格范围查询
+      },
+      {
+        name: 'idx_product_stock',
+        fields: ['stock'], // 库存索引，优化库存筛选
+      }
+    ]
   }
 );
 
