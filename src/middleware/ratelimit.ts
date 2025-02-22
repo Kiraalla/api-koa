@@ -11,8 +11,8 @@ interface RateLimitConfig {
 class RateLimiter {
   private redis: Redis;
   private defaultConfig: RateLimitConfig = {
-    duration: 60000,  // 默认1分钟
-    max: 100,         // 默认最大100次请求
+    duration: process.env.NODE_ENV === 'test' ? 1000 : 60000,  // 测试环境1秒，生产环境1分钟
+    max: process.env.NODE_ENV === 'test' ? 10 : 100,         // 测试环境10次，生产环境100次
     key: 'ratelimit' // 默认键前缀
   };
 
@@ -25,11 +25,27 @@ class RateLimiter {
       host: process.env.REDIS_HOST || 'localhost',
       port: Number(process.env.REDIS_PORT) || 6379,
       password: process.env.REDIS_PASSWORD,
-      db: Number(process.env.REDIS_DB) || 0
+      db: Number(process.env.REDIS_DB) || 0,
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      maxRetriesPerRequest: process.env.NODE_ENV === 'test' ? 1 : 3,
+      enableReadyCheck: true,
+      connectTimeout: process.env.NODE_ENV === 'test' ? 2000 : 10000,
+      lazyConnect: false
     });
 
     this.redis.on('error', (error: Error) => {
       logger.error('Redis连接错误:', error);
+    });
+
+    this.redis.on('ready', () => {
+      logger.info('Redis连接就绪');
+    });
+
+    this.redis.on('reconnecting', () => {
+      logger.warn('Redis正在重新连接...');
     });
   }
 
@@ -57,7 +73,14 @@ class RateLimiter {
       return requestCount > config.max;
     } catch (error) {
       logger.error('速率限制检查失败:', error);
-      return false; // 发生错误时默认放行
+      if (error instanceof Error && error.message.includes('READONLY')) {
+        // Redis只读错误，可能是主从切换
+        await this.redis.quit();
+        this.redis = new Redis(this.redis.options);
+        return this.isLimited(identifier, config);
+      }
+      // 其他错误情况下，为了系统安全，默认限制请求
+      return true;
     }
   }
 

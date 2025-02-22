@@ -2,14 +2,32 @@ import { Context, Next } from 'koa';
 import crypto from 'crypto';
 
 // 加密配置
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'your-encryption-key-32-characters-!!'; // 32 bytes
+import dotenvFlow from 'dotenv-flow';
+
+// 加载环境变量
+dotenvFlow.config({
+  silent: true,
+  path: process.cwd(),
+  purge_dotenv: true
+});
+
+if (!process.env.ENCRYPTION_KEY) {
+  throw new Error('ENCRYPTION_KEY environment variable is required');
+}
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 const IV_LENGTH = 16; // For AES, this is always 16
+
+// 验证密钥长度
+if (Buffer.from(ENCRYPTION_KEY).length !== 32) {
+  throw new Error('ENCRYPTION_KEY must be 32 bytes (256 bits) long');
+}
 
 /**
  * 加密数据
  * @param text 要加密的文本
  */
-function encrypt(text: string): string {
+export function encrypt(text: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
   let encrypted = cipher.update(text);
@@ -21,7 +39,7 @@ function encrypt(text: string): string {
  * 解密数据
  * @param text 要解密的文本
  */
-function decrypt(text: string): string {
+export function decrypt(text: string): string {
   const textParts = text.split(':');
   const iv = Buffer.from(textParts.shift() || '', 'hex');
   const encryptedText = Buffer.from(textParts.join(':'), 'hex');

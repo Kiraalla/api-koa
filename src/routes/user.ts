@@ -5,7 +5,7 @@ import User from '../models/user';
 import { CustomContext, LoginRequest, RegisterRequest } from '../types';
 import { generateToken } from '../utils/auth';
 
-const router = new Router({ prefix: '/api/users' });
+const router = new Router({ prefix: '/users' });
 
 // 用户注册
 router.post('/register', validate(userSchemas.register), async (ctx: CustomContext) => {
@@ -20,9 +20,11 @@ router.post('/register', validate(userSchemas.register), async (ctx: CustomConte
       username,
       email,
       password: hashedPassword,
-      phone
+      phone,
+      role: 'user'
     });
 
+    ctx.status = 200;
     ctx.body = {
       success: true,
       message: '注册成功',
@@ -32,13 +34,24 @@ router.post('/register', validate(userSchemas.register), async (ctx: CustomConte
         email: user.email,
         phone: user.phone,
         role: user.role
-      }
+      },
+      code: 200
     };
   } catch (error: any) {
-    ctx.status = 400;
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      ctx.status = 400;
+      ctx.body = {
+        success: false,
+        message: '该邮箱已被注册',
+        data: null
+      };
+      return;
+    }
+
+    ctx.status = 500;
     ctx.body = {
       success: false,
-      message: error.message || '注册失败',
+      message: '注册失败，请稍后重试',
       data: null
     };
   }
@@ -61,7 +74,7 @@ router.post('/login', validate(userSchemas.login), async (ctx: CustomContext) =>
     }
 
     // 验证密码
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
       ctx.status = 401;
       ctx.body = {
@@ -78,6 +91,7 @@ router.post('/login', validate(userSchemas.login), async (ctx: CustomContext) =>
       role: user.role
     });
 
+    ctx.status = 200;
     ctx.body = {
       success: true,
       message: '登录成功',
@@ -87,7 +101,6 @@ router.post('/login', validate(userSchemas.login), async (ctx: CustomContext) =>
           id: user.id,
           username: user.username,
           email: user.email,
-          phone: user.phone,
           role: user.role
         }
       }
@@ -96,7 +109,7 @@ router.post('/login', validate(userSchemas.login), async (ctx: CustomContext) =>
     ctx.status = 500;
     ctx.body = {
       success: false,
-      message: '登录失败',
+      message: '登录失败，请稍后重试',
       data: null
     };
   }

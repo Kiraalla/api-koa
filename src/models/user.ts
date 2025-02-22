@@ -27,15 +27,19 @@ User.init({
   },
   username: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: false
   },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    unique: {
+      name: 'users_email_key',
+      msg: '该邮箱已被注册'
+    },
     validate: {
-      isEmail: true
+      isEmail: {
+        msg: '请输入有效的邮箱地址'
+      }
     }
   },
   password: {
@@ -57,9 +61,32 @@ User.init({
   }
 }, {
   sequelize,
-  modelName: 'User',
+  modelName: 'user',
   tableName: 'users',
-  paranoid: true
+  timestamps: true,
+  paranoid: true,
+  underscored: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['email']
+    }
+  ]
+});
+
+// 添加钩子函数，在创建和更新用户时加密密码
+User.beforeCreate(async (user: User) => {
+  if (user.password) {
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(user.password, salt);
+  }
+});
+
+User.beforeUpdate(async (user: User) => {
+  if (user.changed('password')) {
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(user.password, salt);
+  }
 });
 
 export default User;

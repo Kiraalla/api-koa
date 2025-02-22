@@ -23,7 +23,7 @@
     "@types/node": "^22.13.4",
     "bcryptjs": "^3.0.2",
     "bloom-filters": "^3.0.4",
-    "dotenv": "^16.4.7",
+    "dotenv-flow": "^4.1.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "koa": "^2.15.4",

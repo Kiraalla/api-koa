@@ -17,14 +17,48 @@ export const errorHandler = async (ctx: Context, next: () => Promise<any>) => {
       ip: ctx.ip
     });
 
+    // 根据错误类型设置不同的状态码和消息
+    let status = err.status || 500;
+    let message = err.message;
+
+    // 处理验证错误
+    if (err.name === 'ValidationError') {
+      status = 400;
+      message = err.details ? err.details[0].message : '请求参数验证失败';
+    }
+
+    // 处理业务逻辑错误
+    if (err.name === 'BusinessError') {
+      status = 400;
+    }
+
+    // 处理认证错误
+    if (err.name === 'AuthenticationError') {
+      status = 401;
+      message = '认证失败';
+    }
+
+    // 处理授权错误
+    if (err.name === 'AuthorizationError') {
+      status = 403;
+      message = '没有权限访问该资源';
+    }
+
     // 设置响应
-    ctx.status = err.status || 500;
+    ctx.status = status;
     ctx.body = {
       success: false,
-      message: process.env.NODE_ENV === 'production' 
-        ? '服务器内部错误' 
-        : err.message,
-      data: null
+      message: process.env.NODE_ENV === 'production' && status === 500
+        ? '服务器内部错误'
+        : message,
+      data: null,
+      // 在非生产环境下提供更多错误详情
+      ...(process.env.NODE_ENV !== 'production' && {
+        error: {
+          name: err.name,
+          stack: err.stack
+        }
+      })
     };
   }
 };
