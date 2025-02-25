@@ -3,7 +3,15 @@ import sequelize from '../../config/database';
 
 describe('User Model', () => {
   beforeAll(async () => {
-    await sequelize.sync({ force: true }); // 清空数据库并重新创建表
+    try {
+      await sequelize.authenticate();
+      console.log('数据库连接成功');
+      // 使用alter而不是force，以保持数据结构的完整性
+      await sequelize.sync({ alter: true });
+    } catch (error) {
+      console.error('无法连接到数据库:', error);
+      throw error;
+    }
   });
 
   afterAll(async () => {
@@ -11,7 +19,12 @@ describe('User Model', () => {
   });
 
   beforeEach(async () => {
-    await User.destroy({ where: {} }); // 每个测试前清空用户表
+    // 使用truncate确保完全清空表并重置自增ID
+    await User.destroy({
+      truncate: true,
+      cascade: true,
+      force: true
+    });
   });
 
   describe('User Creation', () => {
@@ -19,7 +32,9 @@ describe('User Model', () => {
       const userData = {
         username: 'testuser',
         password: 'password123',
-        email: 'test@example.com'
+        email: 'test@example.com',
+        role: 'user',
+        status: 'active'
       };
 
       const user = await User.create(userData);
@@ -32,7 +47,9 @@ describe('User Model', () => {
       const userData = {
         username: 'testuser',
         password: 'password123',
-        email: 'test@example.com'
+        email: 'test@example.com',
+        role: 'user',
+        status: 'active'
       };
 
       await User.create(userData);
@@ -43,7 +60,9 @@ describe('User Model', () => {
       const userData = {
         username: 'testuser',
         password: 'password123',
-        email: 'invalid-email'
+        email: 'invalid-email',
+        role: 'user',
+        status: 'active'
       };
 
       await expect(User.create(userData)).rejects.toThrow();
@@ -51,11 +70,15 @@ describe('User Model', () => {
   });
 
   describe('User Authentication', () => {
+    let testUser: User;
+
     beforeEach(async () => {
-      await User.create({
+      testUser = await User.create({
         username: 'testuser',
         password: 'password123',
-        email: 'test@example.com'
+        email: 'test@example.com',
+        role: 'user',
+        status: 'active'
       });
     });
 
@@ -86,7 +109,9 @@ describe('User Model', () => {
       user = await User.create({
         username: 'testuser',
         password: 'password123',
-        email: 'test@example.com'
+        email: 'test@example.com',
+        role: 'user',
+        status: 'active'
       });
     });
 

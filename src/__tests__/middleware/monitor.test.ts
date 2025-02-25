@@ -1,5 +1,6 @@
 import { monitorMiddleware } from '../../middleware/monitor';
 import { Context } from 'koa';
+import Application from 'koa';
 
 describe('Monitor Middleware', () => {
   let ctx: Partial<Context> & { method: string; path: string; status: number; state: Record<string, any>; set: jest.Mock };
@@ -8,12 +9,17 @@ describe('Monitor Middleware', () => {
 
   beforeEach(() => {
     startTime = Date.now();
+    const mockApp = {
+      listenerCount: jest.fn().mockReturnValue(1)
+    } as unknown as Application;
+
     ctx = {
       method: 'GET',
       path: '/test',
       status: 200,
       state: {},
-      set: jest.fn()
+      set: jest.fn(),
+      app: mockApp
     };
     next = jest.fn().mockImplementation(() => {
       // 模拟请求处理时间

@@ -10,6 +10,8 @@
 - [用户模块](#用户模块)
   - [用户注册](#用户注册)
   - [用户登录](#用户登录)
+  - [用户信息更新](#用户信息更新)
+  - [密码验证](#密码验证)
 
 ## 认证说明
 
@@ -21,9 +23,10 @@ Authorization: Bearer <token>
 ```
 
 ### 权限级别
-系统包含两种用户角色：
+系统包含三种用户角色：
 - `user`: 普通用户
 - `admin`: 管理员
+- `guest`: 访客
 
 某些接口需要管理员权限才能访问，请确保使用具有相应权限的账号。
 
@@ -96,10 +99,12 @@ Authorization: Bearer <token>
 **请求参数**：
 ```json
 {
-  "username": string,   // 用户名，必填
-  "email": string,     // 邮箱，必填
-  "password": string,  // 密码，必填
-  "phone": string      // 手机号，选填
+  "username": string,   // 用户名，必填，3-30个字符
+  "email": string,     // 邮箱，必填，有效的邮箱格式
+  "password": string,  // 密码，必填，6-100个字符
+  "phone": string,     // 手机号，选填，11位有效手机号
+  "role": string,      // 角色，选填，默认为"user"
+  "status": string     // 状态，选填，默认为"active"
 }
 ```
 
@@ -113,7 +118,8 @@ Authorization: Bearer <token>
     "username": string,
     "email": string,
     "phone": string,
-    "role": string
+    "role": string,
+    "status": string
   }
 }
 ```
@@ -151,7 +157,8 @@ Authorization: Bearer <token>
       "username": string,
       "email": string,
       "phone": string,
-      "role": string
+      "role": string,
+      "status": string
     }
   }
 }
@@ -162,6 +169,78 @@ Authorization: Bearer <token>
 {
   "success": false,
   "message": "用户名或密码错误",
+  "data": null
+}
+```
+
+### 用户信息更新
+
+**接口地址**：`PUT /api/users/:id`
+
+**请求参数**：
+```json
+{
+  "email": string,     // 邮箱，选填，必须是有效的邮箱格式
+  "phone": string,     // 手机号，选填，必须是有效的手机号
+  "password": string,  // 密码，选填，6-100个字符
+  "status": string     // 状态，选填，可选值：active/inactive/suspended
+}
+```
+
+**成功响应**：
+```json
+{
+  "success": true,
+  "message": "更新成功",
+  "data": {
+    "id": number,
+    "username": string,
+    "email": string,
+    "phone": string,
+    "role": string,
+    "status": string,
+    "last_login": string
+  }
+}
+```
+
+**错误响应**：
+```json
+{
+  "success": false,
+  "message": "更新失败原因",
+  "data": null
+}
+```
+
+### 密码验证
+
+**接口地址**：`POST /api/users/verify-password`
+
+**请求参数**：
+```json
+{
+  "username": string,  // 用户名，必填
+  "password": string   // 待验证的密码，必填
+}
+```
+
+**成功响应**：
+```json
+{
+  "success": true,
+  "message": "密码验证成功",
+  "data": {
+    "isValid": boolean  // 密码是否正确
+  }
+}
+```
+
+**错误响应**：
+```json
+{
+  "success": false,
+  "message": "验证失败原因",
   "data": null
 }
 ```
@@ -187,3 +266,5 @@ Authorization: Bearer <token>
 6. 使用traceId进行问题追踪和定位
 7. 关注性能监控指标，及时处理性能告警
 8. 合理利用缓存机制提升接口性能
+9. 用户密码在服务器端会自动进行加密存储
+10. 邮箱和用户名具有唯一性约束，不能重复使用
