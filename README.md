@@ -56,6 +56,9 @@
 ├── api-doc.md           # API接口文档
 ├── logs/                # 日志文件目录
 ├── src/                 # 源代码目录
+│   ├── __tests__/       # 测试目录
+│   │   ├── middleware/  # 中间件测试
+│   │   └── models/      # 模型测试
 │   ├── adapter/         # 多端适配器
 │   ├── config/          # 项目配置
 │   ├── middleware/      # 中间件
@@ -64,6 +67,7 @@
 │   ├── types/           # 类型定义
 │   ├── utils/           # 工具函数
 │   └── app.ts           # 应用入口
+├── jest.config.ts       # Jest测试配置
 ├── package.json         # 项目依赖
 └── tsconfig.json        # TypeScript配置
 ```

@@ -6,6 +6,7 @@ import { errorHandler, requestLogger } from './middleware/error';
 import { performanceMonitor } from './middleware/monitor';
 import { createRateLimiter } from './middleware/ratelimit';
 import { tracing } from './middleware/tracing';
+import indexRoutes from './routes/index';
 import userRoutes from './routes/user';
 
 // 加载环境变量
@@ -65,6 +66,10 @@ const responseFormatter = async (ctx: Koa.Context, next: Koa.Next) => {
 // 添加响应格式化中间件
 app.use(responseFormatter);
 
+// 注册根路由
+app.use(indexRoutes.routes());
+app.use(indexRoutes.allowedMethods());
+
 // 注册用户路由
 app.use(userRoutes.routes());
 app.use(userRoutes.allowedMethods());
@@ -84,7 +89,6 @@ app.use(async (ctx) => {
     };
   }
 });
-
 // 启动服务器
 // 仅在非测试环境下启动服务器
 if (process.env.NODE_ENV !== 'test') {
