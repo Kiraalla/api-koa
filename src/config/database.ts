@@ -1,5 +1,6 @@
-import { Sequelize } from 'sequelize';
 import dotenvFlow from 'dotenv-flow';
+import { Sequelize } from 'sequelize';
+import { checkDatabaseStructure } from '../utils/dbInit';
 
 // 加载环境变量
 dotenvFlow.config({
@@ -41,6 +42,46 @@ const sequelize = new Sequelize({
     force: false,
     alter: false
   }
+});
+
+// 在导出之前检查数据库结构
+// 创建一个可以在测试中被捕获的Promise
+let dbInitPromise: Promise<void>;
+
+// 执行数据库结构检查
+dbInitPromise = (async () => {
+  try {
+    await checkDatabaseStructure(sequelize);
+    return Promise.resolve();
+  } catch (error: any) {
+    console.error('数据库结构检查失败:', error.message);
+    
+    // 在生产环境下，记录额外的错误信息
+    if (process.env.NODE_ENV === 'production') {
+      console.error('生产环境下数据库连接失败，应用将继续运行但功能可能受限');
+    }
+
+    // 创建一个错误对象
+    const exitError = new Error('Process.exit called with code: 1');
+    return Promise.reject(exitError);
+  }
+})().then(() => {
+  // 成功时不做任何处理
+}, () => {
+  // 失败时退出进程
+  process.exit(1);
+});
+
+
+
+
+// 导出dbInitPromise以便测试可以捕获到它
+export { dbInitPromise };
+
+
+// 确保Promise错误不会被吞掉
+process.on('unhandledRejection', (error) => {
+  throw error;
 });
 
 export default sequelize;

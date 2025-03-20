@@ -34,6 +34,9 @@ app.use(performanceMonitor);
 // 添加日志中间件
 app.use(requestLogger);
 
+// 添加错误处理中间件
+app.use(errorHandler);
+
 import { ApiResponse } from './types/common';
 
 // 响应格式化中间件

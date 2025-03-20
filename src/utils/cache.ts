@@ -1,10 +1,9 @@
+import { BloomFilter } from 'bloom-filters';
 import { Redis } from 'ioredis';
 import { logger } from './logger';
-import { BloomFilter } from 'bloom-filters';
-import { promisify } from 'util';
 
 class CacheManager {
-  private redis: Redis;
+  private redis!: Redis;
   private defaultTTL: number = 3600; // 默认缓存时间1小时
   private bloomFilter: BloomFilter;
   private warmupInProgress: boolean = false;
@@ -15,15 +14,41 @@ class CacheManager {
     // 初始化布隆过滤器
     this.bloomFilter = new BloomFilter(10000, 0.01); // 预期元素数量10000，错误率0.01
     
+    this.initRedisConnection();
+  }
+  
+  private initRedisConnection() {
     this.redis = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
       port: Number(process.env.REDIS_PORT) || 6379,
       password: process.env.REDIS_PASSWORD,
       db: Number(process.env.REDIS_DB) || 0,
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 100, 3000); // 最大延迟3秒
+        logger.warn(`Redis连接重试 (${times})，延迟 ${delay}ms`);
+        return delay;
+      },
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      connectTimeout: 10000,
+      lazyConnect: false
     });
 
     this.redis.on('error', (error: Error) => {
       logger.error('Redis连接错误:', error);
+    });
+    
+    this.redis.on('ready', () => {
+      logger.info('Redis连接就绪');
+    });
+    
+    this.redis.on('reconnecting', () => {
+      logger.warn('Redis正在重新连接...');
+    });
+    
+    this.redis.on('end', () => {
+      logger.error('Redis连接已关闭，将在5秒后尝试重新连接');
+      setTimeout(() => this.initRedisConnection(), 5000);
     });
   }
 
@@ -167,10 +192,17 @@ class CacheManager {
    * 获取缓存状态
    */
   async getStatus(): Promise<object> {
-    const info = await promisify(this.redis.info).bind(this.redis)();
+    // 使用回调API的promisify方式
+    const info = await new Promise<string>((resolve, reject) => {
+      this.redis.info((err, result) => {
+        if (err) reject(err);
+        else resolve(result || ''); // 确保result不为undefined
+      });
+    });
+    
     return {
       redisInfo: info,
-      bloomFilterSize: this.bloomFilter.size,
+      bloomFilterSize: this.bloomFilter.size, // size是getter属性，不是方法
       warmupInProgress: this.warmupInProgress
     };
   }

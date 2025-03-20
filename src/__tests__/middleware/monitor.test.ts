@@ -1,6 +1,14 @@
+import Application, { Context } from 'koa';
 import { monitorMiddleware } from '../../middleware/monitor';
-import { Context } from 'koa';
-import Application from 'koa';
+
+// 模拟logger
+jest.mock('../../utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  }
+}));
 
 describe('Monitor Middleware', () => {
   let ctx: Partial<Context> & { method: string; path: string; status: number; state: Record<string, any>; set: jest.Mock };
@@ -73,5 +81,49 @@ describe('Monitor Middleware', () => {
       'X-Response-Time',
       expect.stringMatching(/^\d+ms$/)
     );
+  });
+  
+  // 测试CPU告警逻辑
+  it('should log warning when CPU usage exceeds threshold', () => {
+    // 导入监控类
+    const { PerformanceMonitor } = require('../../middleware/monitor');
+    const { logger } = require('../../utils/logger');
+    
+    // 创建监控实例
+    const monitor = new PerformanceMonitor();
+    
+    // 模拟高CPU使用率的指标
+    const highCpuMetric = {
+      path: '/test',
+      responseTime: 100,
+      memoryUsage: {
+        heapUsed: 100000000,
+        heapTotal: 200000000,
+        rss: 300000000
+      },
+      cpuUsage: {
+        user: 1000000,
+        system: 500000
+      },
+      method: 'GET',
+      statusCode: 200,
+      timestamp: Date.now(),
+      concurrentRequests: 1,
+      requestQueueSize: 1,
+      systemLoad: [0, 0, 0],
+      networkIO: {
+        bytesRead: 0,
+        bytesWritten: 0
+      }
+    };
+    
+    // 设置非常低的CPU阈值以触发告警
+    monitor.CPU_THRESHOLD = 0.0001;
+    
+    // 调用处理指标方法
+    PerformanceMonitor.recordMetrics(highCpuMetric);
+    
+    // 验证是否记录了CPU告警
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('CPU告警'));
   });
 });

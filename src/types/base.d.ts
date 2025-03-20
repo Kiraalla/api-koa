@@ -1,4 +1,3 @@
-import { Context } from 'koa';
 import winston from 'winston';
 
 // 基础响应状态码枚举
@@ -85,12 +84,8 @@ export interface ILogger {
 }
 
 // 扩展的Koa上下文类型
-export interface CustomContext extends Context {
-  user?: {
-    id: number;
-    role: string;
-    permissions: string[];
-  };
-  requestId?: string;
-  startTime?: number;
-}
+// 使用从index.ts导入的CustomContext接口
+import { CustomContext } from './index';
+
+// 重新导出CustomContext
+export { CustomContext };

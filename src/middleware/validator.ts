@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { CustomContext } from '../types';
+import { CustomContext } from '../types/index';
 
 export type ValidationSchema = Joi.ObjectSchema<any> | {
   body?: Joi.ObjectSchema<any>;
@@ -70,12 +70,22 @@ export const userSchemas: Record<string, Joi.ObjectSchema<any>> = {
     })
   }),
   login: Joi.object({
-    email: Joi.string().required().email().messages({
-      'string.email': '请输入有效的邮箱地址',
-      'any.required': '邮箱不能为空'
+    username: Joi.string().required().messages({
+      'any.required': '用户名不能为空'
     }),
     password: Joi.string().required().messages({
       'any.required': '密码不能为空'
     })
+  }),
+  verifyPassword: Joi.object({
+    username: Joi.string().optional(),
+    email: Joi.string().email().optional().messages({
+      'string.email': '请输入有效的邮箱地址'
+    }),
+    password: Joi.string().required().messages({
+      'any.required': '密码不能为空'
+    })
+  }).or('username', 'email').messages({
+    'object.missing': '用户名或邮箱必须提供一个'
   })
 };

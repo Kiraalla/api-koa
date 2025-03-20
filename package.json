@@ -24,6 +24,8 @@
     "bcryptjs": "^3.0.2",
     "bloom-filters": "^3.0.4",
     "dotenv-flow": "^4.1.0",
+    "inquirer": "^12.5.0",
+    "ioredis": "^5.5.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "koa": "^2.15.4",
@@ -36,6 +38,7 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@types/inquirer": "^9.0.7",
     "@types/ioredis": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/joi": "^17.2.3",

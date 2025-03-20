@@ -1,8 +1,12 @@
-import { Model, DataTypes } from 'sequelize';
 import bcrypt from 'bcryptjs';
+import { CreateOptions, DataTypes, Model, UpdateOptions } from 'sequelize';
 import sequelize from '../config/database';
 
 class User extends Model {
+  static hooks: {
+    beforeCreate: ((user: User, options: CreateOptions) => Promise<void>)[];
+    beforeUpdate: ((user: User, options: UpdateOptions) => Promise<void>)[];
+  };
   public id!: number;
   public username!: string;
   public email!: string;
@@ -17,7 +21,8 @@ class User extends Model {
   public readonly deleted_at!: Date;
 
   public async comparePassword(candidatePassword: string): Promise<boolean> {
-    return bcrypt.compare(candidatePassword, this.password);
+    // 不记录敏感信息，直接比较密码
+    return await bcrypt.compare(candidatePassword, this.password);
   }
 }
 
@@ -119,18 +124,27 @@ User.init({
   ]
 });
 
+// 使用固定的盐值进行密码加密
+const SALT_ROUNDS = 10;
+
 // 添加钩子函数，在创建和更新用户时加密密码
 User.beforeCreate(async (user: User) => {
-  if (user.password) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
+  try {
+    if (user.password) {
+      user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
+    }
+  } catch (error) {
+    throw new Error('密码加密失败');
   }
 });
 
 User.beforeUpdate(async (user: User) => {
-  if (user.changed('password')) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
+  try {
+    if (user.changed('password')) {
+      user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
+    }
+  } catch (error) {
+    throw new Error('密码加密失败');
   }
 });
 

@@ -2,6 +2,16 @@ import { Context, Next } from 'koa';
 import { performance } from 'perf_hooks';
 import { logger } from '../utils/logger';
 
+// 声明全局变量类型扩展
+declare global {
+  var activeConnections: number;
+}
+
+// 初始化全局变量
+if (typeof global.activeConnections === 'undefined') {
+  global.activeConnections = 0;
+}
+
 interface RequestMetrics {
   path: string;
   method: string;
@@ -84,8 +94,8 @@ class PerformanceMonitor {
   private static readonly WINDOW_SIZE_MS = 60000; // 1分钟时间窗口
   private static readonly WINDOW_COUNT = 60; // 保留60个时间窗口（1小时）
   private static readonly ALERT_THRESHOLD_MS = 1000; // 响应时间告警阈值：1秒
-  private static readonly MEMORY_THRESHOLD = 0.85; // 内存使用率告警阈值：85%
-  private static readonly CPU_THRESHOLD = 0.80; // CPU使用率告警阈值：80%
+  private static readonly MEMORY_THRESHOLD = 0.95; // 内存使用率告警阈值：95%
+  private static readonly CPU_THRESHOLD = 0.90; // CPU使用率告警阈值：90%
   private static readonly ERROR_RATE_THRESHOLD = 0.05; // 错误率告警阈值：5%
   private static readonly CONCURRENT_REQUESTS_THRESHOLD = 1000; // 并发请求数告警阈值
 
@@ -195,6 +205,23 @@ class PerformanceMonitor {
  * 性能监控中间件
  */
 export async function performanceMonitor(ctx: Context, next: Next) {
+  // 只在非静态资源路径上进行详细监控
+  const isStaticPath = ctx.path.startsWith('/static/') || ctx.path.startsWith('/assets/');
+  const isMonitorPath = ctx.path.startsWith('/api/monitor');
+  const isHealthCheckPath = ctx.path === '/health' || ctx.path === '/healthcheck';
+  
+  // 对监控API、静态资源路径和健康检查路径使用轻量级监控
+  if (isStaticPath || isMonitorPath || isHealthCheckPath) {
+    const start = performance.now();
+    try {
+      await next();
+    } finally {
+      const responseTime = performance.now() - start;
+      ctx.set('X-Response-Time', `${responseTime}ms`);
+    }
+    return;
+  }
+  
   const start = performance.now();
   const startMemory = process.memoryUsage();
   const startCpu = process.cpuUsage();
@@ -202,45 +229,52 @@ export async function performanceMonitor(ctx: Context, next: Next) {
   try {
     await next();
   } finally {
+    // 采样率控制，只记录部分请求的详细指标
+    const shouldSample = Math.random() < 0.1; // 10%采样率
+    
     const responseTime = performance.now() - start;
-    const endMemory = process.memoryUsage();
-    const endCpu = process.cpuUsage(startCpu);
+    
+    // 对所有请求都设置响应时间头
+    ctx.set('X-Response-Time', `${responseTime}ms`);
+    
+    // 只对采样请求收集详细指标
+    if (shouldSample) {
+      const endMemory = process.memoryUsage();
+      const endCpu = process.cpuUsage(startCpu);
 
-    // 获取系统负载
-    const systemLoad = require('os').loadavg();
+      const metric: RequestMetrics = {
+        path: ctx.path,
+        method: ctx.method,
+        statusCode: ctx.status,
+        responseTime,
+        timestamp: Date.now(),
+        memoryUsage: {
+          heapUsed: endMemory.heapUsed,
+          heapTotal: endMemory.heapTotal,
+          external: endMemory.external,
+          rss: endMemory.rss
+        },
+        cpuUsage: {
+          user: endCpu.user,
+          system: endCpu.system
+        },
+        requestQueueSize: ctx.app.listenerCount('request') || 0,
+        systemLoad: require('os').loadavg(),
+        concurrentRequests: (global as any).activeConnections || 0,
+        networkIO: {
+          bytesRead: process.memoryUsage().external - startMemory.external,
+          bytesWritten: ctx.response.length !== undefined ? ctx.response.length : 0
+        }
+      };
 
-    const metric: RequestMetrics = {
-      path: ctx.path,
-      method: ctx.method,
-      statusCode: ctx.status,
-      responseTime,
-      timestamp: Date.now(),
-      memoryUsage: {
-        heapUsed: endMemory.heapUsed,
-        heapTotal: endMemory.heapTotal,
-        external: endMemory.external,
-        rss: endMemory.rss
-      },
-      cpuUsage: {
-        user: endCpu.user,
-        system: endCpu.system
-      },
-      requestQueueSize: ctx.app.listenerCount('request') || 0,
-      systemLoad: require('os').loadavg(),
-      concurrentRequests: (global as any).activeConnections || 0,
-      networkIO: {
-        bytesRead: process.memoryUsage().external - startMemory.external,
-        bytesWritten: ctx.response.length || 0
+      // 记录数据库查询相关指标
+      if (ctx.state.dbStats) {
+        metric.dbQueryCount = ctx.state.dbStats.queryCount;
+        metric.dbQueryTime = ctx.state.dbStats.queryTime;
       }
-    };
 
-    // 记录数据库查询相关指标
-    if (ctx.state.dbStats) {
-      metric.dbQueryCount = ctx.state.dbStats.queryCount;
-      metric.dbQueryTime = ctx.state.dbStats.queryTime;
+      PerformanceMonitor.recordMetrics(metric);
     }
-
-    PerformanceMonitor.recordMetrics(metric);
   }
 }
 

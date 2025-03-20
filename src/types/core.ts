@@ -1,5 +1,5 @@
 import { Context } from 'koa';
-import { Model, ModelStatic, RestoreOptions, Attributes } from 'sequelize';
+import { Attributes, Model, ModelStatic, RestoreOptions } from 'sequelize';
 
 // 核心业务模型接口
 export interface ICrudOperations<T extends Model> {
@@ -87,13 +87,11 @@ export interface UserContext {
 }
 
 // 扩展的Koa上下文类型
-export interface CustomContext extends Context {
-  request: Context['request'] & BaseRequest;
-  user?: UserContext;
-  requestId: string;
-  startTime: number;
-  validatedData?: Record<string, unknown>;
-}
+// 使用从index.ts导入的CustomContext接口
+import { CustomContext } from './index';
+
+// 重新导出CustomContext
+export { CustomContext };
 
 // 分页参数接口
 export interface PaginationParams {

@@ -1,5 +1,5 @@
-import User from '../../models/user';
 import sequelize from '../../config/database';
+import User from '../../models/user';
 
 describe('User Model', () => {
   beforeAll(async () => {
@@ -98,6 +98,25 @@ describe('User Model', () => {
 
         const isInvalid = await user.comparePassword('wrongpassword');
         expect(isInvalid).toBe(false);
+      }
+    });
+    
+    it('should update user password and hash it', async () => {
+      const user = await User.findOne({ where: { username: 'testuser' } });
+      expect(user).not.toBeNull();
+      
+      if (user) {
+        const originalPassword = user.password;
+        user.password = 'newpassword123';
+        await user.save();
+        
+        // 验证密码已更改且已加密
+        expect(user.password).not.toBe(originalPassword);
+        expect(user.password).not.toBe('newpassword123');
+        
+        // 验证新密码可以正确验证
+        const isValid = await user.comparePassword('newpassword123');
+        expect(isValid).toBe(true);
       }
     });
   });

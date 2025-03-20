@@ -1,17 +1,26 @@
 # Shop API 接口文档
 
 ## 目录
-- [认证说明](#认证说明)
-- [接口响应格式](#接口响应格式)
-- [速率限制](#速率限制)
-- [链路追踪](#链路追踪)
-- [性能监控](#性能监控)
-- [缓存策略](#缓存策略)
-- [用户模块](#用户模块)
-  - [用户注册](#用户注册)
-  - [用户登录](#用户登录)
-  - [用户信息更新](#用户信息更新)
-  - [密码验证](#密码验证)
+- [Shop API 接口文档](#shop-api-接口文档)
+  - [目录](#目录)
+  - [认证说明](#认证说明)
+    - [JWT认证](#jwt认证)
+    - [权限级别](#权限级别)
+  - [接口响应格式](#接口响应格式)
+  - [数据加密传输](#数据加密传输)
+  - [速率限制](#速率限制)
+  - [链路追踪](#链路追踪)
+  - [性能监控](#性能监控)
+  - [缓存策略](#缓存策略)
+    - [缓存层级](#缓存层级)
+    - [缓存特性](#缓存特性)
+  - [用户模块](#用户模块)
+    - [用户注册](#用户注册)
+    - [用户登录](#用户登录)
+    - [用户信息更新](#用户信息更新)
+    - [密码验证](#密码验证)
+  - [错误码说明](#错误码说明)
+  - [注意事项](#注意事项)
 
 ## 认证说明
 
@@ -40,6 +49,25 @@ Authorization: Bearer <token>
   "message": string,    // 响应信息
   "data": object|null   // 响应数据
 }
+```
+
+## 数据加密传输
+
+系统支持请求和响应数据的加密传输：
+
+- 需要在请求头中设置 `x-needs-encryption: true` 来启用加密传输
+- 加密采用AES-256-CBC算法
+- 加密数据格式：`iv:encrypted`，其中iv为16字节的初始化向量（hex格式），encrypted为加密后的数据（hex格式）
+- 加密响应会在响应头中包含 `x-encrypted-response: true`
+- 加密密钥通过环境变量 `ENCRYPTION_KEY` 配置（32字节长度）
+
+示例：
+```http
+POST /api/users/login
+Content-Type: application/json
+x-needs-encryption: true
+
+<encrypted_data>
 ```
 
 ## 速率限制
@@ -104,6 +132,7 @@ Authorization: Bearer <token>
   "password": string,  // 密码，必填，6-100个字符
   "phone": string,     // 手机号，选填，11位有效手机号
   "role": string,      // 角色，选填，默认为"user"
+  "status": string     // 状态，选填，可选值：active/inactive/suspended，默认为"active"
   "status": string     // 状态，选填，默认为"active"
 }
 ```
@@ -119,7 +148,8 @@ Authorization: Bearer <token>
     "email": string,
     "phone": string,
     "role": string,
-    "status": string
+    "status": string,
+    "last_login": string  // 最后登录时间，ISO 8601格式
   }
 }
 ```
@@ -158,7 +188,8 @@ Authorization: Bearer <token>
       "email": string,
       "phone": string,
       "role": string,
-      "status": string
+      "status": string,
+      "last_login": string  // 最后登录时间，ISO 8601格式
     }
   }
 }
@@ -199,6 +230,7 @@ Authorization: Bearer <token>
     "phone": string,
     "role": string,
     "status": string,
+    "last_login": string  // 最后登录时间，ISO 8601格式,
     "last_login": string
   }
 }
